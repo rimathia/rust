@@ -58,8 +58,6 @@ fn get_limit(krate_attrs: &[Attribute], sess: &Session, name: Symbol, default: u
                 Ok(n) => return Limit::new(n),
                 Err(e) => {
                     let primary_span = attr.span;
-                    // let mut err =
-                    //     sess.struct_span_err(attr.span, "`limit` must be a non-negative integer");
 
                     let value_span = attr
                         .meta()
@@ -69,26 +67,18 @@ fn get_limit(krate_attrs: &[Attribute], sess: &Session, name: Symbol, default: u
                     let detail = match e.kind() {
                         IntErrorKind::PosOverflow => {
                             LimitMustBeNonNegativeIntegerDetail::TooLarge { span: value_span }
-                        } // "`limit` is too large BOGUS",
+                        }
                         IntErrorKind::InvalidDigit => {
                             LimitMustBeNonNegativeIntegerDetail::Invalid { span: value_span }
                         }
                         IntErrorKind::Empty => {
                             LimitMustBeNonNegativeIntegerDetail::Empty { span: value_span }
                         }
-                        // IntErrorKind::Empty => "`limit` must be a non-negative integer BOGUS",
-                        // IntErrorKind::InvalidDigit => "not a valid integer BOGUS",
-                        // IntErrorKind::NegOverflow => {
-                        //     bug!("`limit` should never negatively overflow")
-                        // }
-                        // IntErrorKind::Zero => bug!("zero is a valid `limit`"),
                         kind => bug!("unimplemented IntErrorKind variant: {:?}", kind),
                     };
 
-                    // err.span_label(value_span, error_str);
                     let err = LimitMustBeNonNegativeInteger { span: primary_span, detail };
                     sess.emit_err(err);
-                    // err.emit();
                 }
             }
         }
