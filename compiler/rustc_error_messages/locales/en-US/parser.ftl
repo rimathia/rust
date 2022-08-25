@@ -150,4 +150,3 @@ parser_dotdotdot = unexpected token: `...`
 
 parser_left_arrow_operator = unexpected token: `<-`
     .suggestion = if you meant to write a comparison against a negative value, add a space in between `<` and `-`
- 
