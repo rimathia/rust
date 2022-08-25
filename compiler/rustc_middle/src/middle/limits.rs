@@ -10,6 +10,7 @@
 //! just peeks and looks for that attribute.
 
 use crate::bug;
+use crate::errors::{LimitMustBeNonNegativeInteger, LimitMustBeNonNegativeIntegerDetail};
 use crate::ty;
 use rustc_ast::Attribute;
 use rustc_session::Session;
@@ -56,27 +57,38 @@ fn get_limit(krate_attrs: &[Attribute], sess: &Session, name: Symbol, default: u
             match s.as_str().parse() {
                 Ok(n) => return Limit::new(n),
                 Err(e) => {
-                    let mut err =
-                        sess.struct_span_err(attr.span, "`limit` must be a non-negative integer");
+                    let primary_span = attr.span;
+                    // let mut err =
+                    //     sess.struct_span_err(attr.span, "`limit` must be a non-negative integer");
 
                     let value_span = attr
                         .meta()
                         .and_then(|meta| meta.name_value_literal_span())
                         .unwrap_or(attr.span);
 
-                    let error_str = match e.kind() {
-                        IntErrorKind::PosOverflow => "`limit` is too large",
-                        IntErrorKind::Empty => "`limit` must be a non-negative integer",
-                        IntErrorKind::InvalidDigit => "not a valid integer",
-                        IntErrorKind::NegOverflow => {
-                            bug!("`limit` should never negatively overflow")
+                    let detail = match e.kind() {
+                        IntErrorKind::PosOverflow => {
+                            LimitMustBeNonNegativeIntegerDetail::TooLarge { span: value_span }
+                        } // "`limit` is too large BOGUS",
+                        IntErrorKind::InvalidDigit => {
+                            LimitMustBeNonNegativeIntegerDetail::Invalid { span: value_span }
                         }
-                        IntErrorKind::Zero => bug!("zero is a valid `limit`"),
+                        IntErrorKind::Empty => {
+                            LimitMustBeNonNegativeIntegerDetail::Empty { span: value_span }
+                        }
+                        // IntErrorKind::Empty => "`limit` must be a non-negative integer BOGUS",
+                        // IntErrorKind::InvalidDigit => "not a valid integer BOGUS",
+                        // IntErrorKind::NegOverflow => {
+                        //     bug!("`limit` should never negatively overflow")
+                        // }
+                        // IntErrorKind::Zero => bug!("zero is a valid `limit`"),
                         kind => bug!("unimplemented IntErrorKind variant: {:?}", kind),
                     };
 
-                    err.span_label(value_span, error_str);
-                    err.emit();
+                    // err.span_label(value_span, error_str);
+                    let err = LimitMustBeNonNegativeInteger { span: primary_span, detail };
+                    sess.emit_err(err);
+                    // err.emit();
                 }
             }
         }
